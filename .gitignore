@@ -1,0 +1,6 @@
+.*
+
+0_raw/
+1_clean/
+
+!.gitignore
