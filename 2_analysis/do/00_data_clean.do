@@ -1,21 +1,18 @@
-
+**************************************************
+* data_clean.do
 ** Author: Tianyu Zheng
-** Date: April 10, 2024
+** Date: April 10, 2025
 ** Version: Stata/MP 18.0
-
-*-------------------------------------------------------------------------------
-*-------------------------------------------------------------------------------
+**************************************************
 
 /* Data Clean */
-
-clear all
 
 *-------------------------------------------------------------------------------
 /* Rural */
 
 //merge_data
-use "data/rural_person.dta", clear
-merge m:1 hhcode using "data/rural_household.dta"
+use "$RAW/rural_person.dta", clear
+merge m:1 hhcode using "$RAW/rural_household.dta"
 gen rural = 1
 
 gen prov = real(substr(hhcode, 1, 2)) //resident province
@@ -50,8 +47,8 @@ save `rural_processed'
 /* Urban */
 
 //merge_data
-use "data/urban_person.dta", clear
-merge m:1 hhcode using "data/urban_household.dta"
+use "$RAW/urban_person.dta", clear
+merge m:1 hhcode using "$RAW/urban_household.dta"
 gen rural = 0
 
 gen prov = real(substr(hhcode, 1, 2)) //resident province
@@ -155,7 +152,7 @@ keep if year >= 1956 & year <= 1990
 
 drop if missing(sib) | missing(rank)
 
-save "process/data_processed.dta", replace
+save "$CLEAN/data_processed.dta", replace
 
 *-------------------------------------------------------------------------------
 *-------------------------------------------------------------------------------
