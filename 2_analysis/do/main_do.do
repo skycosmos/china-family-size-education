@@ -5,9 +5,6 @@
 ** Version: Stata/MP 18.0
 **************************************************
 
-*-------------------------------------------------------------------------------
-*-------------------------------------------------------------------------------
-
 /* Preliminary Analysis */
 
 *-------------------------------------------------------------------------------
@@ -15,7 +12,7 @@
 ** Table : Summary Statistics
 ** total / urban / rural
 
-use "process/data_processed.dta", clear
+use "$CLEAN/data_processed.dta", clear
 
 gen log_income = log(income)
 label var log_income "Log Annual Income"

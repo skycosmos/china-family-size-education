@@ -7,8 +7,6 @@
 
 /* Preliminary Analysis */
 
-*-------------------------------------------------------------------------------
-
 ** Table : Summary Statistics
 ** total / urban / rural
 

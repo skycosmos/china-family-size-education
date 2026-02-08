@@ -1,0 +1,2000 @@
+---------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/tianyu/Downloads/thesis_pku/2_analysis/logs/master.log
+  log type:  text
+ opened on:   8 Feb 2026, 17:21:49
+
+. 
+. ** Run pipeline
+. do "$DO/00_data_clean.do"
+
+. **************************************************
+. * data_clean.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Data Clean */
+. 
+. *-------------------------------------------------------------------------------
+. /* Rural */
+. 
+. //merge_data
+. use "$RAW/rural_person.dta", clear
+
+. merge m:1 hhcode using "$RAW/rural_household.dta"
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                            35,007  (_merge==3)
+    -----------------------------------------
+
+. gen rural = 1
+
+. 
+. gen prov = real(substr(hhcode, 1, 2)) //resident province
+
+. gen prov_birth = cond(A09_3 > 0, A09_3, .) //province at 14 years old
+(2,698 missing values generated)
+
+. 
+. gen year = A04_1 //birth year
+
+. gen female = cond(A03 == 1, 0, 1) //gender
+
+. gen sib = cond(A08_1 > 0, A08_1, .) //number of siblings including self
+(105 missing values generated)
+
+. gen rank = cond(A08_2 > 0, A08_2, .) //rank in siblings
+(135 missing values generated)
+
+. gen edu = cond(A13_3 >= 0, A13_3, .) //education (years of education)
+(3,609 missing values generated)
+
+. gen health = cond(A16_1 > 0, 3 - A16_1, .) //health indicator
+(39 missing values generated)
+
+. gen marital = cond(A05 > 0, A05, .) //marital status
+(127 missing values generated)
+
+. gen househead = cond(A02 == 1, 1, 0) //head of household
+
+. 
+. //number of dependent children
+. gen child = 0
+
+. forval i = 1/5 {
+  2.     replace child = child + (J02_R`i' > 0 & J03_1_R`i' == idcode & J05_R`i' < 25) if female == 0
+  3.         replace child = child + (J02_R`i' > 0 & J03_2_R`i' == idcode & J05_R`i' < 25) if female == 1
+  4. }
+(3,967 real changes made)
+(3,822 real changes made)
+(1,816 real changes made)
+(1,808 real changes made)
+(265 real changes made)
+(266 real changes made)
+(46 real changes made)
+(46 real changes made)
+(8 real changes made)
+(8 real changes made)
+
+. 
+. //household financial status
+. gen fin_asset = cond(F01 >= 0, cond(F02 >= 0, F01 + F02, F01), .)
+(279 missing values generated)
+
+. gen fin_debt = cond(F05 >= 0, F05, .)
+(529 missing values generated)
+
+. 
+. keep hhcode idcode rural prov prov_birth year female sib rank edu health marital househead child fin_asset fi
+> n_debt
+
+. 
+. tempfile rural_processed
+
+. save `rural_processed'
+file /var/folders/0n/8tlrn9813mq8pd47c0d4fwwh0000gn/T//S_74465.000001 saved as .dta format
+
+. 
+. *-------------------------------------------------------------------------------
+. /* Urban */
+. 
+. //merge_data
+. use "$RAW/urban_person.dta", clear
+
+. merge m:1 hhcode using "$RAW/urban_household.dta"
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                            36,259  (_merge==3)
+    -----------------------------------------
+
+. gen rural = 0
+
+. 
+. gen prov = real(substr(hhcode, 1, 2)) //resident province
+
+. gen prov_birth = cond(A09_3 > 0, A09_3, .) //province at 14 years old
+(3,206 missing values generated)
+
+. 
+. gen year = A04_1 //birth year
+
+. gen female = cond(A03 == 1, 0, 1) //gender
+
+. gen sib = cond(A08_1 > 0, A08_1, .) //number of siblings including self
+(72 missing values generated)
+
+. gen rank = cond(A08_2 > 0, A08_2, .) //rank in siblings
+(87 missing values generated)
+
+. gen edu = cond(A13_3 >= 0, A13_3, .) //education (years of education)
+(3,412 missing values generated)
+
+. gen health = cond(A16_1 > 0, 3 - A16_1, .) //health indicator
+(37 missing values generated)
+
+. gen marital = cond(A05 > 0, A05, .) //marital status
+(238 missing values generated)
+
+. gen househead = cond(A02 == 1, 1, 0) //head of household
+
+. 
+. //number of dependent children
+. gen child = 0
+
+. forval i = 1/5 {
+  2.     replace child = child + (J02_R`i' > 0 & J03_1_R`i' == idcode & J05_R`i' < 25) if female == 0
+  3.         replace child = child + (J02_R`i' > 0 & J03_2_R`i' == idcode & J05_R`i' < 25) if female == 1
+  4. }
+(5,303 real changes made)
+(5,376 real changes made)
+(1,566 real changes made)
+(1,559 real changes made)
+(125 real changes made)
+(118 real changes made)
+(15 real changes made)
+(10 real changes made)
+(1 real change made)
+(0 real changes made)
+
+. 
+. //household financial status
+. gen fin_asset = cond(F01 >= 0, cond(F02 >= 0, F01 + F02, F01), .)
+(314 missing values generated)
+
+. gen fin_debt = cond(F05 >= 0, F05, .)
+(550 missing values generated)
+
+. 
+. //job_1(main)
+. gen income_1 = cond(C05_1 > 0, C05_1 + 12 * cond(C07_4 > 0, C07_4, 0) + 12 * cond(C07_5 > 0, C07_5, 0), .)
+(17,471 missing values generated)
+
+. //job_2
+. gen income_2 = cond(C09_4 > 0, C09_4, .)
+(35,867 missing values generated)
+
+. //job_3
+. gen income_3 = cond(C09_6 > 0 & C09_8 > 0, C09_6 * C09_8, .)
+(36,123 missing values generated)
+
+. //total wage income per year
+. egen income = rowtotal(income_1 income_2 income_3)
+
+. replace income = . if income == 0
+(17,459 real changes made, 17,459 to missing)
+
+. 
+. keep hhcode idcode rural prov prov_birth year female sib rank edu health marital househead child fin_asset fi
+> n_debt income
+
+. 
+. tempfile urban_processed
+
+. save `urban_processed'
+file /var/folders/0n/8tlrn9813mq8pd47c0d4fwwh0000gn/T//S_74465.000002 saved as .dta format
+
+. 
+. *-------------------------------------------------------------------------------
+. 
+. /* Combine */
+. 
+. append using `rural_processed'
+(variable hhcode was str15, now str17 to accommodate using data's values)
+
+. 
+. label define province_code ///
+>     11 "Beijing" 12 "Tianjin" 13 "Hebei" 14 "Shanxi" 15 "Inner Mongolia" ///
+>     21 "Liaoning" 22 "Jilin" 23 "Heilongjiang" 31 "Shanghai" 32 "Jiangsu" ///
+>         33 "Zhejiang" 34 "Anhui" 35 "Fujian" 36 "Jiangxi" 37 "Shandong" ///
+>     41 "Henan" 42 "Hubei" 43 "Hunan" 44 "Guangdong" 45 "Guangxi" ///
+>     46 "Hainan" 50 "Chongqing" 51 "Sichuan" 52 "Guizhou" 53 "Yunnan" ///
+>     54 "Tibet" 61 "Shaanxi" 62 "Gansu" 63 "Qinghai" 64 "Ningxia" ///
+>     65 "Xinjiang" 81 "Hong Kong" 82 "Macao" 83 "Taiwan"
+
+. 
+. label values prov province_code
+
+. label values prov_birth province_code
+
+. 
+. // family size categorize
+. gen family_cat = cond(sib>=6, 6, sib)
+
+. label define famcat 1 "1 child" 2 "2 child" 3 "3 child" 4 "4 child" 5 "5 child" 6 "6+ child"
+
+. label values family_cat famcat
+
+. 
+. // rank categorize
+. gen rank_cat = cond(rank>=6, 6, rank)
+
+. label define rankcat 1 "1" 2 "2" 3 "3" 4 "4" 5 "5" 6 "6+"
+
+. label values rank_cat rankcat
+
+. 
+. label define marital_lbl ///
+>     1 "First marriage (legally married)" ///
+>     2 "Remarried after divorce" ///
+>     3 "Remarried after widowhood" ///
+>     4 "Cohabiting (unmarried partnership)" ///
+>     5 "Separated (legally married but living apart)" ///
+>     6 "Divorced (single)" ///
+>     7 "Widowed (single)" ///
+>     8 "Never married" ///
+>     9 "Other", ///
+>     replace
+
+. label values marital marital_lbl
+
+. 
+. label var edu "Years of Edu"
+
+. label var income "Annual Income (CNY)"
+
+. label var rural "Rural Resident = 1"
+
+. label var prov "Province of Residence (Current)"
+
+. label var prov_birth "Province of Residence at Age 14"
+
+. label var year "Birth Year"
+
+. label var female "Female = 1"
+
+. label var sib "Num of Sib + Self"
+
+. label var rank "Birth Order"
+
+. label var family_cat "Family Size Category"
+
+. label var rank_cat "Rank Category"
+
+. label var health "Health Indicator"
+
+. label var marital "Marital Status"
+
+. label var househead "Househead = 1"
+
+. label var child "Num of Depend Child"
+
+. label var fin_asset "Household Financial Asset (CNY)"
+
+. label var fin_debt "Household Financial Debt (CNY)"
+
+. 
+. keep if year >= 1956 & year <= 1990
+(31,884 observations deleted)
+
+. 
+. drop if missing(sib) | missing(rank)
+(73 observations deleted)
+
+. 
+. save "$CLEAN/data_processed.dta", replace
+file /Users/tianyu/Downloads/thesis_pku/1_clean/data_processed.dta saved
+
+. 
+. *-------------------------------------------------------------------------------
+. *-------------------------------------------------------------------------------
+. 
+end of do-file
+
+. do "$DO/01_prelim_analysis.do"
+
+. **************************************************
+. * 01_prelim_analysis.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Preliminary Analysis */
+. 
+. *-------------------------------------------------------------------------------
+. 
+. ** Table : Summary Statistics
+. ** total / urban / rural
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. gen log_income = log(income)
+(23,077 missing values generated)
+
+. label var log_income "Log Annual Income"
+
+. 
+. gen age = 2018 - year
+
+. label var age "Age in 2018"
+
+. 
+. eststo clear
+
+. 
+. estpost summarize age female sib rank househead child edu log_income
+
+             |  e(count)   e(sum_w)    e(mean)     e(Var)      e(sd)     e(min)     e(max)     e(sum) 
+-------------+----------------------------------------------------------------------------------------
+         age |     39309      39309   44.89544   97.03496   9.850633         28         62    1764795 
+      female |     39309      39309   .4984864   .2500041   .5000041          0          1      19595 
+         sib |     39309      39309   3.538223   3.004524   1.733356          1         15     139084 
+        rank |     39309      39309   2.371772   2.293653   1.514481          1         11      93232 
+   househead |     39309      39309   .4098552   .2418801   .4918131          0          1      16111 
+       child |     39309      39309   .6332138   .6419476   .8012163          0          5      24891 
+         edu |     38447      38447   9.408979   12.72593   3.567343          0         21     361747 
+  log_income |     16232      16232   10.71055   .7376506   .8588659   2.995732   15.33402   173853.6 
+
+. eststo total
+
+. 
+. preserve
+
+. keep if rural == 1
+(20,871 observations deleted)
+
+. estpost summarize age female sib rank househead child edu log_income
+
+             |  e(count)   e(sum_w)    e(mean)     e(Var)      e(sd)     e(min)     e(max)     e(sum) 
+-------------+----------------------------------------------------------------------------------------
+         age |     18438      18438   45.70046   99.29081   9.964477         28         62     842625 
+      female |     18438      18438   .4846513    .249778   .4997779          0          1       8936 
+         sib |     18438      18438   3.817334   3.122242   1.766987          1         15      70384 
+        rank |     18438      18438    2.48758   2.433403   1.559937          1         11      45866 
+   househead |     18438      18438   .3764508   .2347483   .4845083          0          1       6941 
+       child |     18438      18438   .6134613   .7329901   .8561484          0          5      11311 
+         edu |     17824      17824   7.779006   8.593643   2.931492          0         21     138653 
+  log_income |         0          0          .          .          .          .          .          0 
+
+. eststo rural
+
+. restore
+
+. 
+. preserve
+
+. keep if rural == 0
+(18,438 observations deleted)
+
+. estpost summarize age female sib rank househead child edu log_income
+
+             |  e(count)   e(sum_w)    e(mean)     e(Var)      e(sd)     e(min)     e(max)     e(sum) 
+-------------+----------------------------------------------------------------------------------------
+         age |     20871      20871   44.18427   93.96844   9.693732         28         62     922170 
+      female |     20871      20871   .5107086   .2498973   .4998973          0          1      10659 
+         sib |     20871      20871   3.291649   2.771046   1.664646          1         11      68700 
+        rank |     20871      20871   2.269465   2.147989   1.465602          1         11      47366 
+   househead |     20871      20871   .4393656   .2463353   .4963217          0          1       9170 
+       child |     20871      20871   .6506636   .5609003   .7489327          0          4      13580 
+         edu |     20623      20623   10.81773   12.01696   3.466549          0         21     223094 
+  log_income |     16232      16232   10.71055   .7376506   .8588659   2.995732   15.33402   173853.6 
+
+. eststo urban
+
+. restore
+
+. 
+. esttab total rural urban using "$RESULT/tables/summary.tex", replace ///
+>     cells("mean(fmt(3)) sd(fmt(3))") ///
+>     title("Summary Statistics") ///
+>         label ///
+>     tex
+(output written to /Users/tianyu/Downloads/thesis_pku/3_results/tables/summary.tex)
+
+.         
+. *-------------------------------------------------------------------------------
+. 
+. ** Table : Distribution of Samples by Family Size and Birth Order
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. tabout family_cat rank_cat using "$RESULT/tables/dist_size_order.tex", ///
+>     style(tex) replace cells(freq col) clab(N_%) ///
+>     topf("$RESULT/tables/header.tex") botf("$RESULT/tables/footer.tex")
+
+Table output written to: /Users/tianyu/Downloads/thesis_pku/3_results/tables/dist_size_order.tex
+
+\begin{tabular}{l|rrrrrr}
+    \toprule
+    & \multicolumn{6}{c}{\textbf{Birth Order}} \\
+    \cmidrule(lr){2-7}
+    \textbf{Family Size} & 1 & 2 & 3 & 4 & 5 & 6+ \\
+    \midrule
+ & \multicolumn{14}{c}{Rank Category} \\
+Family Size Category & \multicolumn{2}{c}{1} & \multicolumn{2}{c}{2} & \multicolumn{2}{c}{3} & \multicolumn{2}{
+> c}{4} & \multicolumn{2}{c}{5} & \multicolumn{2}{c}{6+} & \multicolumn{2}{c}{Total} \\
+&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \%&N \% \\
+\hline
+1 child&3,434.0&23.9&0.0&0.0&0.0&0.0&0.0&0.0&0.0&0.0&0.0&0.0&3,434.0&8.7 \\
+2 child&5,118.0&35.6&4,132.0&38.7&0.0&0.0&0.0&0.0&0.0&0.0&0.0&0.0&9,250.0&23.5 \\
+3 child&3,075.0&21.4&3,188.0&29.9&2,686.0&41.6&0.0&0.0&0.0&0.0&0.0&0.0&8,949.0&22.8 \\
+4 child&1,622.0&11.3&1,897.0&17.8&1,900.0&29.4&1,867.0&48.9&0.0&0.0&0.0&0.0&7,286.0&18.5 \\
+5 child&740.0&5.1&889.0&8.3&1,070.0&16.6&1,057.0&27.7&1,202.0&55.6&0.0&0.0&4,958.0&12.6 \\
+6+ child&383.0&2.7&562.0&5.3&800.0&12.4&893.0&23.4&960.0&44.4&1,834.0&100.0&5,432.0&13.8 \\
+Total&14,372.0&100.0&10,668.0&100.0&6,456.0&100.0&3,817.0&100.0&2,162.0&100.0&1,834.0&100.0&39,309.0&100.0 \\
+\bottomrule
+\end{tabular}
+
+. 
+. *-------------------------------------------------------------------------------
+. 
+. ** FIGURE: Distribution of Family Size by Birth Year
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. * Calculate percentages by year
+. contract year family_cat, freq(count)
+
+. bysort year: egen total = total(count)
+
+. gen pct = (count/total)*100
+
+. 
+. reshape wide pct count, i(year) j(family_cat)
+(j = 1 2 3 4 5 6)
+
+Data                               Long   ->   Wide
+-----------------------------------------------------------------------------
+Number of observations              210   ->   35          
+Number of variables                   5   ->   14          
+j variable (6 values)        family_cat   ->   (dropped)
+xij variables:
+                                    pct   ->   pct1 pct2 ... pct6
+                                  count   ->   count1 count2 ... count6
+-----------------------------------------------------------------------------
+
+. 
+. twoway (line pct6 year, lcolor(maroon%80) lwidth(medthick)) ///
+>        (line pct5 year, lcolor(cranberry%80) lwidth(medthick)) ///
+>        (line pct4 year, lcolor(erose%80) lwidth(medthick)) ///
+>        (line pct3 year, lcolor(eltgreen%80) lwidth(medthick)) ///
+>        (line pct2 year, lcolor(ebblue%80) lwidth(medthick)) ///
+>        (line pct1 year, lcolor(navy%80) lwidth(medthick)), ///
+>        title("Family Size Distribution by Birth Year", size(medlarge) margin(medium)) ///
+>        xtitle("Birth Year", size(medsmall)) ///
+>        ytitle("Percentage of Sample (%)", size(medsmall)) ///
+>        xlabel(1960(10)1990, grid gstyle(dot)) ///
+>        ylabel(0(10)60, grid gstyle(dot) format(%2.0f)) ///
+>        legend(pos(6) cols(6) size(vsmall) symxsize(*0.7) ///
+>               order(6 5 4 3 2 1) ///
+>               label(1 "6+ child") ///
+>               label(2 "5 child") ///
+>               label(3 "4 child") ///
+>               label(4 "3 child") ///
+>               label(5 "2 child") ///
+>               label(6 "1 child")) ///
+>        graphregion(color(white)) plotregion(color(white)) ///
+>            xline(1973, lpattern(dash) lcolor(black) lwidth(medthin)) ///
+>        xline(1979, lpattern(dash) lcolor(black) lwidth(medthin)) ///
+>            text(50 1973.2 "1973: Family Planning Policy", placement(e) size(vsmall)) ///
+>        text(35 1979.2 "1979: One Child Policy", placement(e) size(vsmall))
+
+.            
+. graph export "$RESULT/figures/family_size_dist.png", replace
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/family_size_dist.png saved as PNG format
+
+. 
+end of do-file
+
+. do "$DO/02_income_analysis.do"
+
+. **************************************************
+. * 02_income_analysis.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. ** Table & Figure: Income, Family Size, Rank among Siblings, Educational Attainment
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. estimates clear
+
+. 
+. gen log_income = log(income)
+(23,077 missing values generated)
+
+. label var log_income "Log Income"
+
+. 
+. gen log_asset = log(fin_asset)
+(919 missing values generated)
+
+. label var log_asset "Log Assets"
+
+. 
+. gen age = 2018 - year
+
+. label var age "Age in 2018"
+
+. 
+. gen age_sqrt = age^2
+
+. label var age_sqrt "Age^2"
+
+. 
+. keep if age >= 30 & age < 55
+(10,251 observations deleted)
+
+.         
+. eststo clear
+
+. 
+. // Model 1-2: log_income without education control
+. reg log_income age age_sqrt female child i.family_cat i.rank_cat
+
+      Source |       SS           df       MS      Number of obs   =    13,546
+-------------+----------------------------------   F(14, 13531)    =     89.28
+       Model |  810.442808        14   57.888772   Prob > F        =    0.0000
+    Residual |  8773.59677    13,531  .648407122   R-squared       =    0.0846
+-------------+----------------------------------   Adj R-squared   =    0.0836
+       Total |  9584.03957    13,545   .70757029   Root MSE        =    .80524
+
+------------------------------------------------------------------------------
+  log_income | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.041      0.014     3.00   0.003        0.014       0.068
+    age_sqrt |     -0.001      0.000    -3.83   0.000       -0.001      -0.000
+      female |     -0.424      0.014   -30.11   0.000       -0.452      -0.397
+       child |      0.013      0.011     1.26   0.207       -0.007       0.034
+             |
+  family_cat |
+    2 child  |     -0.057      0.025    -2.31   0.021       -0.106      -0.009
+    3 child  |     -0.080      0.028    -2.85   0.004       -0.136      -0.025
+    4 child  |     -0.120      0.033    -3.62   0.000       -0.185      -0.055
+    5 child  |     -0.171      0.041    -4.16   0.000       -0.252      -0.091
+   6+ child  |     -0.209      0.051    -4.13   0.000       -0.308      -0.110
+             |
+    rank_cat |
+          2  |     -0.012      0.019    -0.64   0.523       -0.049       0.025
+          3  |     -0.037      0.025    -1.48   0.138       -0.086       0.012
+          4  |     -0.018      0.034    -0.52   0.601       -0.083       0.048
+          5  |      0.040      0.045     0.88   0.378       -0.049       0.128
+         6+  |      0.020      0.057     0.34   0.731       -0.092       0.131
+             |
+       _cons |     10.447      0.272    38.37   0.000        9.913      10.980
+------------------------------------------------------------------------------
+
+. estadd local FE "No"
+
+added macro:
+                 e(FE) : "No"
+
+. estadd local EduControl "No"
+
+added macro:
+         e(EduControl) : "No"
+
+. eststo Model1
+
+. 
+. areg log_income age age_sqrt female child i.family_cat i.rank_cat, absorb(prov)
+
+Linear regression, absorbing indicators             Number of obs     = 13,546
+Absorbed variable: prov                             No. of categories =     15
+                                                    F(14, 13517)      =  91.94
+                                                    Prob > F          = 0.0000
+                                                    R-squared         = 0.1234
+                                                    Adj R-squared     = 0.1215
+                                                    Root MSE          = 0.7884
+
+------------------------------------------------------------------------------
+  log_income | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.045      0.013     3.36   0.001        0.019       0.071
+    age_sqrt |     -0.001      0.000    -4.19   0.000       -0.001      -0.000
+      female |     -0.427      0.014   -30.93   0.000       -0.454      -0.400
+       child |      0.019      0.010     1.82   0.068       -0.001       0.039
+             |
+  family_cat |
+    2 child  |     -0.041      0.025    -1.68   0.092       -0.089       0.007
+    3 child  |     -0.056      0.028    -1.97   0.049       -0.111      -0.000
+    4 child  |     -0.094      0.033    -2.82   0.005       -0.159      -0.029
+    5 child  |     -0.138      0.041    -3.34   0.001       -0.219      -0.057
+   6+ child  |     -0.171      0.051    -3.39   0.001       -0.270      -0.072
+             |
+    rank_cat |
+          2  |     -0.011      0.018    -0.60   0.549       -0.047       0.025
+          3  |     -0.036      0.024    -1.49   0.137       -0.084       0.012
+          4  |     -0.024      0.033    -0.72   0.469       -0.088       0.041
+          5  |      0.032      0.044     0.73   0.468       -0.055       0.119
+         6+  |     -0.001      0.056    -0.02   0.985       -0.110       0.108
+             |
+       _cons |     10.342      0.267    38.71   0.000        9.818      10.865
+------------------------------------------------------------------------------
+F test of absorbed indicators: F(14, 13517) = 42.736          Prob > F = 0.000
+
+. estadd local FE "Yes"
+
+added macro:
+                 e(FE) : "Yes"
+
+. estadd local EduControl "No"
+
+added macro:
+         e(EduControl) : "No"
+
+. eststo Model2
+
+. 
+. // Model 3-4: log_income with education control
+. reg log_income age age_sqrt edu female child i.family_cat i.rank_cat
+
+      Source |       SS           df       MS      Number of obs   =    13,448
+-------------+----------------------------------   F(15, 13432)    =    185.89
+       Model |  1629.48497        15  108.632332   Prob > F        =    0.0000
+    Residual |  7849.69707    13,432  .584402701   R-squared       =    0.1719
+-------------+----------------------------------   Adj R-squared   =    0.1710
+       Total |  9479.18205    13,447  .704929133   Root MSE        =    .76446
+
+------------------------------------------------------------------------------
+  log_income | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.050      0.013     3.84   0.000        0.024       0.075
+    age_sqrt |     -0.001      0.000    -3.94   0.000       -0.001      -0.000
+         edu |      0.079      0.002    37.83   0.000        0.075       0.083
+      female |     -0.409      0.013   -30.46   0.000       -0.435      -0.383
+       child |      0.035      0.010     3.49   0.000        0.015       0.055
+             |
+  family_cat |
+    2 child  |      0.052      0.024     2.17   0.030        0.005       0.098
+    3 child  |      0.078      0.027     2.88   0.004        0.025       0.132
+    4 child  |      0.065      0.032     2.03   0.042        0.002       0.127
+    5 child  |      0.054      0.040     1.35   0.176       -0.024       0.132
+   6+ child  |      0.038      0.049     0.79   0.430       -0.057       0.134
+             |
+    rank_cat |
+          2  |     -0.003      0.018    -0.19   0.852       -0.038       0.032
+          3  |     -0.037      0.024    -1.58   0.115       -0.084       0.009
+          4  |     -0.026      0.032    -0.80   0.425       -0.088       0.037
+          5  |      0.010      0.043     0.24   0.813       -0.074       0.094
+         6+  |     -0.016      0.054    -0.30   0.764       -0.123       0.090
+             |
+       _cons |      9.001      0.262    34.37   0.000        8.488       9.515
+------------------------------------------------------------------------------
+
+. estadd local FE "No"
+
+added macro:
+                 e(FE) : "No"
+
+. estadd local EduControl "Yes"
+
+added macro:
+         e(EduControl) : "Yes"
+
+. eststo Model3
+
+. 
+. areg log_income age age_sqrt edu female child i.family_cat i.rank_cat, absorb(prov)
+
+Linear regression, absorbing indicators             Number of obs     = 13,448
+Absorbed variable: prov                             No. of categories =     15
+                                                    F(15, 13418)      = 190.36
+                                                    Prob > F          = 0.0000
+                                                    R-squared         = 0.2086
+                                                    Adj R-squared     = 0.2069
+                                                    Root MSE          = 0.7477
+
+------------------------------------------------------------------------------
+  log_income | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.053      0.013     4.17   0.000        0.028       0.078
+    age_sqrt |     -0.001      0.000    -4.28   0.000       -0.001      -0.000
+         edu |      0.079      0.002    38.13   0.000        0.075       0.083
+      female |     -0.411      0.013   -31.23   0.000       -0.437      -0.385
+       child |      0.038      0.010     3.84   0.000        0.019       0.058
+             |
+  family_cat |
+    2 child  |      0.063      0.023     2.70   0.007        0.017       0.110
+    3 child  |      0.097      0.027     3.56   0.000        0.043       0.150
+    4 child  |      0.082      0.032     2.57   0.010        0.020       0.145
+    5 child  |      0.076      0.040     1.92   0.055       -0.002       0.154
+   6+ child  |      0.067      0.049     1.37   0.170       -0.029       0.162
+             |
+    rank_cat |
+          2  |     -0.002      0.017    -0.13   0.894       -0.037       0.032
+          3  |     -0.035      0.023    -1.52   0.127       -0.081       0.010
+          4  |     -0.028      0.031    -0.88   0.378       -0.089       0.034
+          5  |      0.004      0.042     0.10   0.917       -0.078       0.087
+         6+  |     -0.031      0.053    -0.59   0.555       -0.136       0.073
+             |
+       _cons |      8.918      0.257    34.73   0.000        8.415       9.421
+------------------------------------------------------------------------------
+F test of absorbed indicators: F(14, 13418) = 44.428          Prob > F = 0.000
+
+. estadd local FE "Yes"
+
+added macro:
+                 e(FE) : "Yes"
+
+. estadd local EduControl "Yes"
+
+added macro:
+         e(EduControl) : "Yes"
+
+. eststo Model4
+
+. 
+. // Model 5-6: log_asset with education control
+. reg log_asset age age_sqrt female child i.family_cat i.rank_cat, absorb(prov)
+
+Linear regression, absorbing indicators         Number of obs     =     28,384
+                                                F(14, 28355)      =      22.03
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0907
+                                                Adj R-squared     =     0.0898
+                                                Root MSE          =     1.4934
+
+------------------------------------------------------------------------------
+   log_asset | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.051      0.017     3.01   0.003        0.018       0.084
+    age_sqrt |     -0.001      0.000    -2.47   0.013       -0.001      -0.000
+      female |      0.063      0.018     3.54   0.000        0.028       0.099
+       child |     -0.009      0.012    -0.73   0.466       -0.033       0.015
+             |
+  family_cat |
+    2 child  |     -0.228      0.036    -6.29   0.000       -0.299      -0.157
+    3 child  |     -0.421      0.040   -10.65   0.000       -0.499      -0.344
+    4 child  |     -0.546      0.045   -12.18   0.000       -0.634      -0.458
+    5 child  |     -0.635      0.052   -12.16   0.000       -0.738      -0.533
+   6+ child  |     -0.796      0.060   -13.25   0.000       -0.914      -0.679
+             |
+    rank_cat |
+          2  |      0.035      0.024     1.47   0.142       -0.012       0.082
+          3  |      0.091      0.031     2.94   0.003        0.030       0.151
+          4  |      0.114      0.040     2.86   0.004        0.036       0.192
+          5  |      0.175      0.053     3.34   0.001        0.073       0.278
+         6+  |      0.226      0.062     3.62   0.000        0.104       0.349
+             |
+       _cons |      9.624      0.341    28.26   0.000        8.957      10.292
+------------------------------------------------------------------------------
+
+. estadd local FE "Yes"
+
+added macro:
+                 e(FE) : "Yes"
+
+. estadd local EduControl "No"
+
+added macro:
+         e(EduControl) : "No"
+
+. eststo Model5
+
+. 
+. areg log_asset age age_sqrt edu female child i.family_cat i.rank_cat, absorb(prov)
+
+Linear regression, absorbing indicators             Number of obs     = 27,902
+Absorbed variable: prov                             No. of categories =     15
+                                                    F(15, 27872)      = 137.76
+                                                    Prob > F          = 0.0000
+                                                    R-squared         = 0.1410
+                                                    Adj R-squared     = 0.1401
+                                                    Root MSE          = 1.4437
+
+------------------------------------------------------------------------------
+   log_asset | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+         age |      0.069      0.016     4.21   0.000        0.037       0.102
+    age_sqrt |     -0.001      0.000    -2.80   0.005       -0.001      -0.000
+         edu |      0.115      0.003    41.84   0.000        0.110       0.121
+      female |      0.125      0.018     7.13   0.000        0.090       0.159
+       child |      0.010      0.012     0.86   0.388       -0.013       0.034
+             |
+  family_cat |
+    2 child  |     -0.085      0.035    -2.39   0.017       -0.154      -0.015
+    3 child  |     -0.199      0.039    -5.13   0.000       -0.276      -0.123
+    4 child  |     -0.265      0.044    -5.99   0.000       -0.351      -0.178
+    5 child  |     -0.308      0.052    -5.96   0.000       -0.409      -0.206
+   6+ child  |     -0.408      0.060    -6.84   0.000       -0.525      -0.291
+             |
+    rank_cat |
+          2  |      0.048      0.023     2.04   0.041        0.002       0.094
+          3  |      0.082      0.030     2.71   0.007        0.023       0.141
+          4  |      0.082      0.039     2.11   0.035        0.006       0.159
+          5  |      0.117      0.051     2.28   0.022        0.017       0.218
+         6+  |      0.150      0.061     2.44   0.015        0.030       0.270
+             |
+       _cons |      7.586      0.335    22.62   0.000        6.929       8.243
+------------------------------------------------------------------------------
+F test of absorbed indicators: F(14, 27872) = 134.678         Prob > F = 0.000
+
+. estadd local FE "Yes"
+
+added macro:
+                 e(FE) : "Yes"
+
+. estadd local EduControl "Yes"
+
+added macro:
+         e(EduControl) : "Yes"
+
+. eststo Model6
+
+. 
+. // Table
+. esttab Model1 Model2 Model3 Model4 Model5 Model6 using "$RESULT/tables/income.tex", replace ///
+>     keep(age age_sqrt female child edu 2.family_cat 3.family_cat 4.family_cat 5.family_cat 6.family_cat 2.ran
+> k_cat 3.rank_cat 4.rank_cat 5.rank_cat 6.rank_cat) ///
+>     stats(FE EduControl r2 N, fmt(s s 3 0)) ///
+>     se star(* 0.1 ** 0.05 *** 0.01) ///
+>     title("Family Size and Birth Order Effects on Income") ///
+>     collabels("OLS (1)" "FE (2)" "OLS (3)" "FE (4)" "FE (5)" "FE (6)") ///
+>     alignment(D{.}{.}{-1}) ///
+>     compress nogap ///
+>     label booktabs ///
+>     refcat(2.family_cat "Family Size" 2.rank_cat "Birth Order", nolabel)
+(output written to /Users/tianyu/Downloads/thesis_pku/3_results/tables/income.tex)
+
+. 
+. // Figure
+. coefplot Model2 Model4, ///
+>     keep(2.family_cat 3.family_cat 4.family_cat 5.family_cat 6.family_cat) ///
+>     vertical ///
+>         connect (l) ///
+>         ciopts(lpattern(dash)) ///
+>     xlabel(1 "2" 2 "3" 3 "4" 4 "5" 5 "6+") ///
+>     yline(0, lcolor(red) lpattern(dash)) ///
+>     title("The Impact of Family Size on Log Income") ///
+>         xtitle("Family Size", size(medsmall)) ///
+>         ytitle("Coeffcient Estimates") ///
+>     legend(label(2 "Without Edu Control") label(4 "With Edu Control")) ///
+>     scheme(s1color) ///
+>     plotregion(color(white)) graphregion(color(white))
+
+. 
+. graph export "$RESULT/figures/income.png", replace
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/income.png saved as PNG format
+
+. 
+end of do-file
+
+. do "$DO/03_edu_distribution.do"
+
+. **************************************************
+. * 03_edu_distribution.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Educational Attainment Distribution */
+. 
+. ** FIGURE: Distribution of Highest Grade Completed by Birth Cohort
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. * Create cohort indicators more efficiently
+. egen cohort = cut(year), at(1960,1970,1980,1990) icodes
+(4,758 missing values generated)
+
+. replace cohort = cohort + 1  // adjust to 1-based indexing
+(34,551 real changes made)
+
+. keep if inlist(cohort,1,2,3) & !missing(edu)
+(5,399 observations deleted)
+
+. 
+. * Label cohorts with improved formatting
+. label define cohort_lbl 1 "1960-69" 2 "1970-79" 3 "1980-89"
+
+. label values cohort cohort_lbl
+
+. 
+. * Set graph scheme for consistent styling
+. set scheme s1color
+
+. 
+. * Create histogram plot with fractions
+. histogram edu, by(cohort, ///
+>     cols(3) ///
+>     title("Distribution of Highest Grade Completed by Birth Cohort", size(medium))) ///
+>     discrete width(1) ///
+>     fraction ///
+>     xtitle("Highest Grade Completed", size(small)) ///
+>     ytitle("Fraction of Cohort", size(small)) ///
+>     xlabel(0(2)16, labsize(small)) ///
+>     ylabel(0(0.1)0.3, labsize(small) format(%3.1f)) ///
+>     graphregion(color(white)) ///
+>     plotregion(margin(sides)) ///
+>     fcolor("32 78 132") lcolor("32 78 132%70") ///
+>     name(cohort_hists, replace)
+
+. 
+. * Combine graphs
+. graph combine cohort_hists, ///
+>     graphregion(color(white)) ///
+>     imargin(medium) ///
+>     cols(3) ysize(5) xsize(9)
+
+.         
+. graph export "$RESULT/figures/highest_edu_dist.png", replace
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/highest_edu_dist.png saved as PNG format
+
+. 
+. *-------------------------------------------------------------------------------
+. 
+. ** FIGURE: Average Educational Attainment by Birth Year
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. * Create completion indicators
+. gen primary_complete = (edu >= 5) if !missing(edu)
+(862 missing values generated)
+
+. gen junior_high_complete = (edu >= 9) if !missing(edu)
+(862 missing values generated)
+
+. gen high_school_complete = (edu >= 12) if !missing(edu)
+(862 missing values generated)
+
+. 
+. * Calculate means by birth year
+. collapse (mean) mean_edu=edu mean_primary=primary_complete ///
+>          mean_junior=junior_high_complete mean_high=high_school_complete, ///
+>          by(year)
+
+. 
+. * Label variables for graph
+. label var mean_edu "Avg. Years of Education"
+
+. label var mean_primary "≥ Primary (5 yrs)"
+
+. label var mean_junior "≥ Junior High (9 yrs)"
+
+. label var mean_high "≥ High School (12 yrs)"
+
+. 
+. * Combine both graphs into one with dual axes
+. twoway (line mean_primary year, lcolor(ebblue) lwidth(medthick)) ///
+>        (line mean_junior year, lcolor(emerald) lwidth(medthick)) ///
+>        (line mean_high year, lcolor(cranberry) lwidth(medthick)) ///
+>        (scatter mean_edu year, yaxis(2) mcolor(dkorange) msymbol(O) ///
+>         msize(medium) connect(l) lcolor(dkorange) lwidth(medthick)), ///
+>        title("Educational Attainment by Birth Year", size(medlarge)) ///
+>        xtitle("Birth Year", size(medsmall)) ///
+>        ytitle("Completion Rate", axis(1) size(medsmall)) ///
+>        ytitle("Years of Education", axis(2) size(medsmall)) ///
+>        legend(pos(6) row(1) size(small) ///
+>               order(1 2 3 4) ///
+>               label(1 "Primary") ///
+>               label(2 "Junior High") ///
+>               label(3 "Senior High") ///
+>               label(4 "Avg. Edu Years")) ///
+>        xlabel(1960(10)1990, grid gstyle(dot)) ///
+>        ylabel(0(0.2)1, axis(1) grid gstyle(dot)) ///
+>        ylabel(, axis(2) grid gstyle(dot)) ///
+>        graphregion(color(white)) plotregion(color(white))
+
+. 
+. ** "Note: Completion rates represent proportion attaining at least the specified education level."
+. 
+. graph export "$RESULT/figures/avg_edu_year.png", replace
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/avg_edu_year.png saved as PNG format
+
+. 
+. *-------------------------------------------------------------------------------
+. 
+. ** FIGURES: Educational Attainment by Family Size
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. gen junior_complete = (edu >= 9) if !missing(edu)
+(862 missing values generated)
+
+. gen highschool_complete = (edu >= 12) if !missing(edu)
+(862 missing values generated)
+
+. 
+. collapse (mean) mean_edu=edu junior_rate=junior_complete highschool_rate=highschool_complete, ///
+>          by(year family_cat)
+
+. 
+. * FIGURE : Average Years of Education by Family Size
+. twoway (line mean_edu year if family_cat == 1, lcolor(navy) lwidth(medthick)) ///
+>        (line mean_edu year if family_cat == 2, lcolor(ebblue) lwidth(medthick)) ///
+>        (line mean_edu year if family_cat == 3, lcolor(eltgreen) lwidth(medthick)) ///
+>        (line mean_edu year if family_cat == 4, lcolor(erose) lwidth(medthick)) ///
+>        (line mean_edu year if family_cat == 5, lcolor(cranberry) lwidth(medthick)) ///
+>        (line mean_edu year if family_cat == 6, lcolor(maroon) lwidth(medthick)), ///
+>        title("Average Years of Education by Family Size", size(medlarge)) ///
+>        xtitle("Birth Year", size(medsmall)) ///
+>        ytitle("Years of Education", size(medsmall)) ///
+>        xlabel(1960(10)1990, grid gstyle(dot)) ///
+>        ylabel(, grid gstyle(dot)) ///
+>        legend(pos(6) cols(6) size(vsmall) symxsize(*0.7) ///
+>               order(1 2 3 4 5 6) ///
+>               label(1 "1 child") ///
+>               label(2 "2 child") ///
+>               label(3 "3 child") ///
+>               label(4 "4 child") ///
+>               label(5 "5 child") ///
+>               label(6 "6+ child")) ///
+>        graphregion(color(white)) plotregion(color(white))
+
+.        
+. graph export "$RESULT/figures/edu_size.png", replace width(2000)
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/edu_size.png saved as PNG format
+
+. 
+. * FIGURE : Junior High Completion Rate (≥9 years) by Family Size
+. twoway (line junior_rate year if family_cat == 1, lcolor(navy) lwidth(medthick)) ///
+>        (line junior_rate year if family_cat == 2, lcolor(ebblue) lwidth(medthick)) ///
+>        (line junior_rate year if family_cat == 3, lcolor(eltgreen) lwidth(medthick)) ///
+>        (line junior_rate year if family_cat == 4, lcolor(erose) lwidth(medthick)) ///
+>        (line junior_rate year if family_cat == 5, lcolor(cranberry) lwidth(medthick)) ///
+>        (line junior_rate year if family_cat == 6, lcolor(maroon) lwidth(medthick)), ///
+>        title("Junior High Completion Rate by Family Size", size(medlarge)) ///
+>        xtitle("Birth Year", size(medsmall)) ///
+>        ytitle("Completion Rate", size(medsmall)) ///
+>        xlabel(1960(10)1990, grid gstyle(dot)) ///
+>        ylabel(0(0.2)1, grid gstyle(dot) format(%2.1f)) ///
+>        legend(pos(6) cols(6) size(vsmall) symxsize(*0.7) ///
+>               order(1 2 3 4 5 6) ///
+>               label(1 "1-child") ///
+>               label(2 "2-child") ///
+>               label(3 "3-child") ///
+>               label(4 "4-child") ///
+>               label(5 "5-child") ///
+>               label(6 "6+ child")) ///
+>        graphregion(color(white)) plotregion(color(white))
+
+.            
+. * Note: Completion rate = proportion with ≥9 years of education.
+.        
+. graph export "$RESULT/figures/junior_comp_size.png", replace width(2000)
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/junior_comp_size.png saved as PNG format
+
+. 
+. * FIGURE : High School Completion Rate (≥12 years) by Family Size
+. twoway (line highschool_rate year if family_cat == 1, lcolor(navy) lwidth(medthick)) ///
+>        (line highschool_rate year if family_cat == 2, lcolor(ebblue) lwidth(medthick)) ///
+>        (line highschool_rate year if family_cat == 3, lcolor(eltgreen) lwidth(medthick)) ///
+>        (line highschool_rate year if family_cat == 4, lcolor(erose) lwidth(medthick)) ///
+>        (line highschool_rate year if family_cat == 5, lcolor(cranberry) lwidth(medthick)) ///
+>        (line highschool_rate year if family_cat == 6, lcolor(maroon) lwidth(medthick)), ///
+>        title("High School Completion Rate by Family Size", size(medlarge)) ///
+>        xtitle("Birth Year", size(medsmall)) ///
+>        ytitle("Completion Rate", size(medsmall)) ///
+>        xlabel(1960(10)1990, grid gstyle(dot)) ///
+>        ylabel(0(0.2)1, grid gstyle(dot) format(%2.1f)) ///
+>        legend(pos(6) cols(6) size(vsmall) symxsize(*0.7) ///
+>               order(1 2 3 4 5 6) ///
+>               label(1 "1 child") ///
+>               label(2 "2 child") ///
+>               label(3 "3 child") ///
+>               label(4 "4 child") ///
+>               label(5 "5 child") ///
+>               label(6 "6+ child")) ///
+>        graphregion(color(white)) plotregion(color(white))
+
+.        
+. * Note: Completion rate = proportion with ≥12 years of education.
+.         
+. graph export "$RESULT/figures/highschool_comp_size.png", replace width(2000)
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/highschool_comp_size.png saved as PNG format
+
+. 
+end of do-file
+
+. do "$DO/04_decollective_did.do"
+
+. **************************************************
+. * 04_decollective_did.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Decollective */
+. 
+. /* Difference-in-Differnce */
+. 
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. estimates clear
+
+. 
+. // Merge policy implementation data
+. rename prov_birth province
+
+. merge m:1 province using "$RAW/policy_time.dta"
+(label province_code already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                           411
+        from master                       411  (_merge==1)
+        from using                          0  (_merge==2)
+
+    Matched                            38,898  (_merge==3)
+    -----------------------------------------
+
+. drop prov_name _merge
+
+. rename province prov_birth
+
+. 
+. // Calculate school entry and graduation years
+. gen entry_year = year + 6  // Started school at age 6
+
+. gen grade_9_year = entry_year + 9  // Completed 9th grade at age 15 (6+9)
+
+. gen grade_12_year = entry_year + 12 // Completed 12th grade at age 18 (6+12)
+
+. 
+. // Create articulation indicators (restricted to 1970-1995 window)
+. gen junior_artic = (edu > 9) if inrange(grade_9_year, 1970, 1995) & edu >= 9
+(24,401 missing values generated)
+
+. gen senior_artic = (edu > 12) if inrange(grade_12_year, 1970, 1995) & edu >= 12
+(33,967 missing values generated)
+
+. 
+. // Years of Education
+. gen post = (year >= time)
+
+. reghdfe edu i.family_cat##post, absorb(year prov_birth) vce(cluster prov_birth)
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =     38,065
+Absorbing 2 HDFE groups                           F(  11,     30) =      53.79
+Statistics robust to heteroskedasticity           Prob > F        =     0.0000
+                                                  R-squared       =     0.2270
+                                                  Adj R-squared   =     0.2255
+                                                  Within R-sq.    =     0.0392
+Number of clusters (prov_birth) =         31      Root MSE        =     3.1377
+
+                               (Std. err. adjusted for 31 clusters in prov_birth)
+---------------------------------------------------------------------------------
+                |               Robust
+            edu | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+     family_cat |
+       2 child  |     -0.855      0.133    -6.42   0.000       -1.127      -0.583
+       3 child  |     -1.393      0.156    -8.91   0.000       -1.712      -1.074
+       4 child  |     -1.723      0.147   -11.75   0.000       -2.022      -1.423
+       5 child  |     -1.981      0.166   -11.95   0.000       -2.320      -1.643
+      6+ child  |     -2.287      0.185   -12.34   0.000       -2.665      -1.908
+                |
+         1.post |      0.890      0.299     2.97   0.006        0.279       1.502
+                |
+family_cat#post |
+     2 child#1  |     -0.793      0.183    -4.33   0.000       -1.168      -0.419
+     3 child#1  |     -1.012      0.196    -5.16   0.000       -1.412      -0.611
+     4 child#1  |     -1.092      0.243    -4.49   0.000       -1.589      -0.595
+     5 child#1  |     -0.952      0.273    -3.49   0.002       -1.510      -0.395
+    6+ child#1  |     -1.345      0.299    -4.50   0.000       -1.955      -0.734
+                |
+          _cons |     10.761      0.149    72.09   0.000       10.457      11.066
+---------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+        year |        35           1          34     |
+  prov_birth |        31          31           0    *|
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store model_edu
+
+. 
+. /* Regression Analysis */
+. // 9th Grade Articulation Rate
+. preserve
+
+. keep if inrange(grade_9_year, 1970, 1995)
+(11,096 observations deleted)
+
+. replace post = (grade_9_year >= time)
+(16,257 real changes made)
+
+. reghdfe junior_artic i.family_cat##post, absorb(grade_9_year prov_birth) vce(cluster prov_birth) 
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =     14,743
+Absorbing 2 HDFE groups                           F(  11,     29) =      15.08
+Statistics robust to heteroskedasticity           Prob > F        =     0.0000
+                                                  R-squared       =     0.0664
+                                                  Adj R-squared   =     0.0624
+                                                  Within R-sq.    =     0.0129
+Number of clusters (prov_birth) =         30      Root MSE        =     0.4783
+
+                               (Std. err. adjusted for 30 clusters in prov_birth)
+---------------------------------------------------------------------------------
+                |               Robust
+   junior_artic | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+     family_cat |
+       2 child  |      0.041      0.042     0.97   0.340       -0.045       0.127
+       3 child  |     -0.007      0.037    -0.20   0.841       -0.082       0.068
+       4 child  |     -0.043      0.043    -1.00   0.326       -0.130       0.045
+       5 child  |     -0.061      0.040    -1.54   0.133       -0.143       0.020
+      6+ child  |     -0.098      0.048    -2.02   0.053       -0.197       0.001
+                |
+         1.post |      0.161      0.070     2.31   0.028        0.018       0.303
+                |
+family_cat#post |
+     2 child#1  |     -0.162      0.049    -3.34   0.002       -0.262      -0.063
+     3 child#1  |     -0.163      0.046    -3.56   0.001       -0.257      -0.069
+     4 child#1  |     -0.192      0.049    -3.88   0.001       -0.293      -0.091
+     5 child#1  |     -0.137      0.047    -2.91   0.007       -0.234      -0.041
+    6+ child#1  |     -0.186      0.059    -3.13   0.004       -0.307      -0.064
+                |
+          _cons |      0.602      0.044    13.52   0.000        0.511       0.693
+---------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+------------------------------------------------------+
+  Absorbed FE | Categories  - Redundant  = Num. Coefs |
+--------------+---------------------------------------|
+ grade_9_year |        25           1          24     |
+   prov_birth |        30          30           0    *|
+------------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store junior_artic
+
+. restore
+
+. 
+. // 12th Grade Articulation Rate
+. preserve
+
+. keep if inrange(grade_12_year, 1970, 1995)
+(13,812 observations deleted)
+
+. replace post = (grade_12_year >= time)
+(17,592 real changes made)
+
+. reghdfe senior_artic i.family_cat##post, absorb(grade_12_year prov_birth) vce(cluster prov_birth)
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =      5,278
+Absorbing 2 HDFE groups                           F(  11,     28) =       2.47
+Statistics robust to heteroskedasticity           Prob > F        =     0.0261
+                                                  R-squared       =     0.0801
+                                                  Adj R-squared   =     0.0695
+                                                  Within R-sq.    =     0.0030
+Number of clusters (prov_birth) =         29      Root MSE        =     0.4789
+
+                               (Std. err. adjusted for 29 clusters in prov_birth)
+---------------------------------------------------------------------------------
+                |               Robust
+   senior_artic | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+     family_cat |
+       2 child  |      0.105      0.067     1.59   0.124       -0.031       0.242
+       3 child  |      0.130      0.094     1.39   0.174       -0.061       0.322
+       4 child  |      0.075      0.076     0.98   0.335       -0.081       0.230
+       5 child  |      0.102      0.082     1.25   0.222       -0.065       0.269
+      6+ child  |      0.084      0.077     1.09   0.285       -0.074       0.243
+                |
+         1.post |      0.292      0.097     3.03   0.005        0.095       0.490
+                |
+family_cat#post |
+     2 child#1  |     -0.155      0.082    -1.89   0.069       -0.323       0.013
+     3 child#1  |     -0.204      0.094    -2.18   0.038       -0.395      -0.012
+     4 child#1  |     -0.162      0.109    -1.49   0.147       -0.385       0.061
+     5 child#1  |     -0.189      0.097    -1.96   0.060       -0.387       0.009
+    6+ child#1  |     -0.164      0.099    -1.66   0.109       -0.368       0.039
+                |
+          _cons |      0.373      0.079     4.69   0.000        0.210       0.535
+---------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-------------------------------------------------------+
+   Absorbed FE | Categories  - Redundant  = Num. Coefs |
+---------------+---------------------------------------|
+ grade_12_year |        22           1          21     |
+    prov_birth |        29          29           0    *|
+-------------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store senior_artic
+
+. restore
+
+. 
+. // Set display format for coefficients
+. set cformat %9.3f
+
+.         
+. // Main results table
+. esttab model_edu junior_artic senior_artic using "$RESULT/tables/did_decollective.tex", replace ///
+>     b(3) se(3) nobaselevels noomitted ///
+>     star(* 0.10 ** 0.05 *** 0.01) ///
+>     label booktabs nomtitles ///
+>     title("DiD Estimates of Decollectivization Impact on Education") ///
+>     mgroups("Years of Education" "Junior High Articulation" "Senior High Articulation", ///
+>             pattern(1 1 1) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
+>     keep(*.family_cat 1.post *.family_cat#*.post) ///
+>     order(*.family_cat 1.post *.family_cat#1.post) ///
+>     coeflabels(1.family_cat "1 child" ///
+>                2.family_cat "2 child" ///
+>                3.family_cat "3 child" ///
+>                4.family_cat "4 child" ///
+>                5.family_cat "5 child" ///
+>                6.family_cat "6+ child" ///
+>                1.post "Post-Decollective" ///
+>                1.family_cat#1.post "1 child × Post" ///
+>                2.family_cat#1.post "2 child × Post" ///
+>                3.family_cat#1.post "3 child × Post" ///
+>                4.family_cat#1.post "4 child × Post" ///
+>                5.family_cat#1.post "5 child × Post" ///
+>                6.family_cat#1.post "6+ child × Post") ///
+>     stats(N r2, fmt(0 3) labels("Observations" "R-squared")) ///
+>     addnotes("Notes: Standard errors in parentheses. *** p<0.01, ** p<0.05, * p<0.10.") ///
+>     prehead("\begin{table}[htbp]\centering\small") ///
+>     postfoot("\end{table}")
+(output written to /Users/tianyu/Downloads/thesis_pku/3_results/tables/did_decollective.tex)
+
+.         
+. * Figure : Years of Education
+. coefplot (model_edu, keep(*.family_cat#1.post) ///
+>              recast(connected) lwidth(medthick) lcolor(navy) ///
+>              msymbol(O) msize(medlarge) mcolor(navy) ///
+>              ciopts(recast(rline) lpattern(dash) lcolor(navy*.6))), ///
+>     vertical ///
+>     xlabel(1 "2 child" 2 "3 child" 3 "4 child" 4 "5 child" 5 "6+ child", labsize(small)) ///
+>     ytitle("Coefficient Estimate", size(medsmall)) ///
+>     title("Treatment effects on Years of Education", size(medlarge)) ///
+>     subtitle("Family Size × Post-Decollectivization Interaction", size(medsmall)) ///
+>     legend(off) ///
+>     scheme(s1color) ///
+>     plotregion(fcolor(white)) ///
+>     graphregion(fcolor(white) margin(l=2 r=2)) ///
+>     note("Note: Dashed lines represent 95% confidence intervals.", size(vsmall)) ///
+>     yline(0, lcolor(gray) lpattern(solid) lwidth(medium)) ///
+>     xtitle("Family Size", size(medsmall)) ///
+>     ylabel(-2(0.5)0.5, nogrid)
+
+. 
+. graph export "$RESULT/figures/did_decollective_edu.png", replace width(2000)
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/did_decollective_edu.png saved as PNG format
+
+. 
+. * Figure : Articulation Rates
+. coefplot (junior_artic, keep(*.family_cat#1.post) ///
+>              recast(connected) lwidth(medthick) lcolor(cranberry) ///
+>              msymbol(D) msize(medlarge) mcolor(cranberry) ///
+>              ciopts(recast(rline) lpattern(dash) lcolor(cranberry*.6))) ///
+>          (senior_artic, keep(*.family_cat#1.post) ///
+>              recast(connected) lwidth(medthick) lcolor(forest_green) ///
+>              msymbol(S) msize(medlarge) mcolor(forest_green) ///
+>              ciopts(recast(rline) lpattern(dash) lcolor(forest_green*.6))), ///
+>     vertical ///
+>     xlabel(1 "2 child" 2 "3 child" 3 "4 child" 4 "5 child" 5 "6+ child", labsize(small)) ///
+>     ytitle("Coefficient Estimate", size(medsmall)) ///
+>     title("Treatment effects on School Articulation Rates", size(medlarge)) ///
+>     subtitle("Family Size × Post-Decollectivization Interaction", size(medsmall)) ///
+>     legend(order(2 "Junior High Articulation" 4 "Senior High Articulation") ///
+>            pos(6) rows(1) size(small)) ///
+>     scheme(s1color) ///
+>     plotregion(fcolor(white)) ///
+>     graphregion(fcolor(white) margin(l=2 r=2)) ///
+>     note("Note: Dashed lines represent 95% confidence intervals.", size(vsmall)) ///
+>     yline(0, lcolor(gray) lpattern(solid) lwidth(medium)) ///
+>     xtitle("Family Size", size(medsmall)) ///
+>     ylabel(-0.5(0.1)0.1, nogrid)
+
+. 
+. graph export "$RESULT/figures/did_decollective_artic.png", replace width(2000)
+file /Users/tianyu/Downloads/thesis_pku/3_results/figures/did_decollective_artic.png saved as PNG format
+
+. 
+. 
+end of do-file
+
+. do "$DO/05_decollective_event_study.do"
+
+. **************************************************
+. * 05_decollective_event_study.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Event Study */
+. 
+. // Create and adjust event time (shift to avoid negative values)
+. gen event_time = grade_9_year - time + 5
+(437 missing values generated)
+
+. keep if inrange(event_time, 0, 10)
+(24,519 observations deleted)
+
+. 
+. label define event_time_lbl ///
+>     0 "-5" 1 "-4" 2 "-3" 3 "-2" 4 "-1" ///
+>     5 "0" 6 "+1" 7 "+2" 8 "+3" 9 "+4" 10 "+5"
+
+. label values event_time event_time_lbl
+
+. 
+. // Run regression with family size interactions
+. reghdfe junior_artic i.family_cat##ib4.event_time, ///  // Using t=-1 (event_time=4) as reference
+>     absorb(prov_birth grade_9_year) vce(cluster prov_birth)
+(dropped 1 singleton observations)
+(MWFE estimator converged in 6 iterations)
+note: 10.event_time omitted because of collinearity
+warning: missing F statistic; dropped variables due to collinearity or too few clusters
+
+HDFE Linear regression                            Number of obs   =      6,947
+Absorbing 2 HDFE groups                           F(  64,     25) =          .
+Statistics robust to heteroskedasticity           Prob > F        =          .
+                                                  R-squared       =     0.0801
+                                                  Adj R-squared   =     0.0665
+                                                  Within R-sq.    =     0.0169
+Number of clusters (prov_birth) =         26      Root MSE        =     0.4799
+
+                                     (Std. err. adjusted for 26 clusters in prov_birth)
+---------------------------------------------------------------------------------------
+                      |               Robust
+         junior_artic | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------------+----------------------------------------------------------------
+           family_cat |
+             2 child  |     -0.002      0.140    -0.01   0.990       -0.290       0.286
+             3 child  |     -0.183      0.101    -1.82   0.081       -0.390       0.024
+             4 child  |     -0.091      0.101    -0.90   0.376       -0.299       0.117
+             5 child  |     -0.080      0.095    -0.84   0.408       -0.276       0.116
+            6+ child  |     -0.141      0.100    -1.41   0.172       -0.347       0.065
+                      |
+           event_time |
+                  -5  |     -0.631      0.217    -2.91   0.008       -1.078      -0.184
+                  -4  |     -0.280      0.207    -1.35   0.188       -0.707       0.146
+                  -3  |     -0.054      0.143    -0.38   0.709       -0.348       0.241
+                  -2  |     -0.067      0.160    -0.42   0.680       -0.396       0.263
+                   0  |      0.043      0.129     0.33   0.742       -0.223       0.310
+                  +1  |      0.005      0.113     0.05   0.964       -0.227       0.237
+                  +2  |      0.282      0.091     3.10   0.005        0.095       0.470
+                  +3  |     -0.030      0.131    -0.23   0.819       -0.300       0.239
+                  +4  |     -0.064      0.138    -0.46   0.647       -0.348       0.220
+                  +5  |      0.000  (omitted)
+                      |
+family_cat#event_time |
+          2 child#-5  |      0.431      0.144     3.00   0.006        0.135       0.728
+          2 child#-4  |      0.116      0.211     0.55   0.588       -0.318       0.550
+          2 child#-3  |      0.043      0.223     0.19   0.849       -0.416       0.501
+          2 child#-2  |     -0.022      0.258    -0.08   0.933       -0.554       0.510
+           2 child#0  |     -0.012      0.200    -0.06   0.953       -0.423       0.399
+          2 child#+1  |     -0.013      0.192    -0.07   0.948       -0.408       0.383
+          2 child#+2  |     -0.209      0.157    -1.33   0.196       -0.532       0.114
+          2 child#+3  |      0.114      0.180     0.63   0.533       -0.257       0.484
+          2 child#+4  |      0.204      0.184     1.11   0.277       -0.175       0.583
+          2 child#+5  |      0.149      0.185     0.80   0.430       -0.233       0.530
+          3 child#-5  |      0.629      0.133     4.72   0.000        0.354       0.903
+          3 child#-4  |      0.276      0.169     1.63   0.116       -0.073       0.625
+          3 child#-3  |      0.147      0.158     0.93   0.361       -0.179       0.473
+          3 child#-2  |      0.053      0.151     0.35   0.729       -0.259       0.365
+           3 child#0  |      0.085      0.171     0.50   0.622       -0.267       0.437
+          3 child#+1  |      0.220      0.165     1.33   0.196       -0.121       0.560
+          3 child#+2  |     -0.071      0.145    -0.49   0.630       -0.369       0.228
+          3 child#+3  |      0.251      0.149     1.68   0.105       -0.057       0.558
+          3 child#+4  |      0.358      0.135     2.66   0.014        0.080       0.635
+          3 child#+5  |      0.274      0.158     1.74   0.094       -0.050       0.599
+          4 child#-5  |      0.499      0.135     3.69   0.001        0.221       0.777
+          4 child#-4  |      0.131      0.141     0.93   0.361       -0.159       0.422
+          4 child#-3  |     -0.073      0.151    -0.48   0.635       -0.384       0.238
+          4 child#-2  |      0.055      0.174     0.31   0.757       -0.304       0.413
+           4 child#0  |     -0.089      0.158    -0.56   0.577       -0.415       0.236
+          4 child#+1  |     -0.008      0.135    -0.06   0.951       -0.287       0.270
+          4 child#+2  |     -0.283      0.136    -2.08   0.048       -0.562      -0.003
+          4 child#+3  |      0.099      0.167     0.59   0.559       -0.246       0.444
+          4 child#+4  |      0.270      0.124     2.18   0.039        0.015       0.526
+          4 child#+5  |      0.149      0.162     0.92   0.367       -0.185       0.482
+          5 child#-5  |      0.403      0.145     2.78   0.010        0.104       0.701
+          5 child#-4  |      0.119      0.150     0.79   0.437       -0.191       0.429
+          5 child#-3  |     -0.083      0.149    -0.56   0.582       -0.391       0.224
+          5 child#-2  |      0.032      0.154     0.21   0.836       -0.285       0.350
+           5 child#0  |     -0.099      0.177    -0.56   0.580       -0.464       0.265
+          5 child#+1  |      0.018      0.145     0.12   0.902       -0.281       0.317
+          5 child#+2  |     -0.249      0.158    -1.57   0.129       -0.575       0.077
+          5 child#+3  |      0.159      0.143     1.11   0.276       -0.135       0.453
+          5 child#+4  |      0.238      0.132     1.80   0.083       -0.034       0.510
+          5 child#+5  |      0.222      0.147     1.51   0.142       -0.080       0.524
+         6+ child#-5  |      0.481      0.143     3.36   0.003        0.186       0.776
+         6+ child#-4  |      0.148      0.143     1.03   0.312       -0.147       0.443
+         6+ child#-3  |     -0.080      0.110    -0.73   0.473       -0.307       0.146
+         6+ child#-2  |     -0.012      0.142    -0.09   0.931       -0.304       0.280
+          6+ child#0  |     -0.074      0.147    -0.51   0.616       -0.377       0.228
+         6+ child#+1  |      0.035      0.113     0.31   0.762       -0.198       0.267
+         6+ child#+2  |     -0.202      0.172    -1.18   0.251       -0.556       0.152
+         6+ child#+3  |      0.050      0.144     0.35   0.729       -0.246       0.347
+         6+ child#+4  |      0.163      0.137     1.19   0.246       -0.119       0.445
+         6+ child#+5  |      0.101      0.162     0.62   0.538       -0.233       0.435
+                      |
+                _cons |      0.640      0.073     8.81   0.000        0.490       0.789
+---------------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+------------------------------------------------------+
+  Absorbed FE | Categories  - Redundant  = Num. Coefs |
+--------------+---------------------------------------|
+   prov_birth |        26          26           0    *|
+ grade_9_year |        13           1          12     |
+------------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store event_junior_artic
+
+. 
+. reghdfe senior_artic i.family_cat##ib4.event_time, ///  // Using t=-1 (event_time=4) as reference
+>     absorb(prov_birth grade_12_year) vce(cluster prov_birth)
+(dropped 2 singleton observations)
+(MWFE estimator converged in 6 iterations)
+note: 10.event_time omitted because of collinearity
+warning: missing F statistic; dropped variables due to collinearity or too few clusters
+
+HDFE Linear regression                            Number of obs   =      2,689
+Absorbing 2 HDFE groups                           F(  64,     24) =          .
+Statistics robust to heteroskedasticity           Prob > F        =          .
+                                                  R-squared       =     0.1097
+                                                  Adj R-squared   =     0.0753
+                                                  Within R-sq.    =     0.0236
+Number of clusters (prov_birth) =         25      Root MSE        =     0.4761
+
+                                     (Std. err. adjusted for 25 clusters in prov_birth)
+---------------------------------------------------------------------------------------
+                      |               Robust
+         senior_artic | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------------+----------------------------------------------------------------
+           family_cat |
+             2 child  |      0.066      0.122     0.54   0.592       -0.185       0.317
+             3 child  |      0.113      0.147     0.77   0.450       -0.190       0.415
+             4 child  |      0.232      0.099     2.34   0.028        0.028       0.436
+             5 child  |      0.111      0.111     1.00   0.328       -0.119       0.341
+            6+ child  |     -0.040      0.122    -0.33   0.746       -0.292       0.212
+                      |
+           event_time |
+                  -5  |     -0.593      0.254    -2.34   0.028       -1.117      -0.069
+                  -4  |     -0.095      0.331    -0.29   0.775       -0.778       0.587
+                  -3  |      0.052      0.256     0.20   0.841       -0.477       0.581
+                  -2  |      0.098      0.191     0.52   0.611       -0.295       0.492
+                   0  |      0.247      0.210     1.18   0.251       -0.186       0.681
+                  +1  |      0.471      0.189     2.50   0.020        0.082       0.860
+                  +2  |      0.182      0.124     1.46   0.157       -0.075       0.438
+                  +3  |      0.229      0.161     1.42   0.169       -0.104       0.561
+                  +4  |     -0.148      0.183    -0.81   0.429       -0.526       0.231
+                  +5  |      0.000  (omitted)
+                      |
+family_cat#event_time |
+          2 child#-5  |      0.321      0.158     2.04   0.053       -0.004       0.646
+          2 child#-4  |     -0.200      0.302    -0.66   0.515       -0.823       0.424
+          2 child#-3  |     -0.036      0.208    -0.17   0.866       -0.465       0.394
+          2 child#-2  |     -0.206      0.267    -0.77   0.449       -0.758       0.346
+           2 child#0  |     -0.065      0.241    -0.27   0.789       -0.563       0.433
+          2 child#+1  |     -0.343      0.190    -1.81   0.083       -0.735       0.048
+          2 child#+2  |      0.038      0.192     0.20   0.844       -0.358       0.434
+          2 child#+3  |     -0.062      0.242    -0.26   0.800       -0.562       0.438
+          2 child#+4  |      0.211      0.200     1.05   0.302       -0.202       0.625
+          2 child#+5  |      0.132      0.227     0.58   0.566       -0.336       0.600
+          3 child#-5  |      0.287      0.189     1.52   0.142       -0.104       0.678
+          3 child#-4  |     -0.074      0.310    -0.24   0.814       -0.714       0.567
+          3 child#-3  |     -0.282      0.246    -1.14   0.264       -0.790       0.226
+          3 child#-2  |     -0.107      0.173    -0.62   0.541       -0.464       0.250
+           3 child#0  |     -0.033      0.214    -0.15   0.879       -0.476       0.410
+          3 child#+1  |     -0.365      0.264    -1.38   0.179       -0.911       0.180
+          3 child#+2  |     -0.141      0.214    -0.66   0.516       -0.583       0.301
+          3 child#+3  |     -0.209      0.245    -0.85   0.404       -0.715       0.298
+          3 child#+4  |      0.200      0.253     0.79   0.438       -0.323       0.722
+          3 child#+5  |      0.022      0.234     0.09   0.927       -0.462       0.505
+          4 child#-5  |      0.170      0.110     1.55   0.135       -0.057       0.396
+          4 child#-4  |     -0.369      0.266    -1.39   0.179       -0.918       0.181
+          4 child#-3  |     -0.448      0.230    -1.95   0.063       -0.921       0.026
+          4 child#-2  |     -0.315      0.205    -1.54   0.138       -0.738       0.108
+           4 child#0  |     -0.322      0.237    -1.36   0.188       -0.811       0.168
+          4 child#+1  |     -0.563      0.204    -2.75   0.011       -0.984      -0.141
+          4 child#+2  |     -0.324      0.182    -1.77   0.089       -0.700       0.053
+          4 child#+3  |     -0.353      0.235    -1.50   0.147       -0.838       0.132
+          4 child#+4  |      0.050      0.241     0.21   0.838       -0.448       0.547
+          4 child#+5  |     -0.157      0.200    -0.79   0.439       -0.570       0.256
+          5 child#-5  |      0.254      0.119     2.13   0.043        0.008       0.500
+          5 child#-4  |     -0.247      0.229    -1.08   0.292       -0.719       0.226
+          5 child#-3  |     -0.199      0.201    -0.99   0.332       -0.613       0.215
+          5 child#-2  |     -0.209      0.153    -1.36   0.185       -0.526       0.107
+           5 child#0  |     -0.212      0.217    -0.98   0.337       -0.659       0.235
+          5 child#+1  |     -0.388      0.249    -1.55   0.133       -0.902       0.127
+          5 child#+2  |     -0.026      0.176    -0.15   0.884       -0.388       0.337
+          5 child#+3  |     -0.142      0.224    -0.64   0.531       -0.605       0.320
+          5 child#+4  |      0.121      0.233     0.52   0.610       -0.361       0.602
+          5 child#+5  |     -0.001      0.247    -0.00   0.997       -0.511       0.509
+         6+ child#-5  |      0.345      0.135     2.57   0.017        0.068       0.623
+         6+ child#-4  |     -0.105      0.267    -0.39   0.697       -0.657       0.446
+         6+ child#-3  |     -0.131      0.214    -0.61   0.547       -0.572       0.311
+         6+ child#-2  |     -0.005      0.221    -0.02   0.981       -0.461       0.451
+          6+ child#0  |      0.010      0.271     0.04   0.971       -0.550       0.569
+         6+ child#+1  |     -0.266      0.230    -1.16   0.259       -0.741       0.209
+         6+ child#+2  |      0.178      0.191     0.93   0.362       -0.217       0.572
+         6+ child#+3  |     -0.021      0.238    -0.09   0.929       -0.512       0.469
+         6+ child#+4  |      0.294      0.195     1.51   0.145       -0.109       0.697
+         6+ child#+5  |      0.035      0.239     0.15   0.884       -0.457       0.527
+                      |
+                _cons |      0.508      0.085     5.96   0.000        0.332       0.684
+---------------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-------------------------------------------------------+
+   Absorbed FE | Categories  - Redundant  = Num. Coefs |
+---------------+---------------------------------------|
+    prov_birth |        25          25           0    *|
+ grade_12_year |        13           1          12     |
+-------------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store event_senior_artic
+
+. 
+. reghdfe edu i.family_cat##ib4.event_time, ///  // Using t=-1 (event_time=4) as reference
+>     absorb(prov_birth year) vce(cluster prov_birth)
+(dropped 1 singleton observations)
+(MWFE estimator converged in 6 iterations)
+note: 10.event_time omitted because of collinearity
+warning: missing F statistic; dropped variables due to collinearity or too few clusters
+
+HDFE Linear regression                            Number of obs   =     14,422
+Absorbing 2 HDFE groups                           F(  64,     26) =          .
+Statistics robust to heteroskedasticity           Prob > F        =          .
+                                                  R-squared       =     0.0854
+                                                  Adj R-squared   =     0.0789
+                                                  Within R-sq.    =     0.0237
+Number of clusters (prov_birth) =         27      Root MSE        =     3.0051
+
+                                     (Std. err. adjusted for 27 clusters in prov_birth)
+---------------------------------------------------------------------------------------
+                      |               Robust
+                  edu | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------------+----------------------------------------------------------------
+           family_cat |
+             2 child  |      0.789      0.656     1.20   0.240       -0.559       2.138
+             3 child  |      0.590      0.660     0.89   0.379       -0.766       1.947
+             4 child  |      0.273      0.577     0.47   0.640       -0.914       1.460
+             5 child  |     -0.013      0.590    -0.02   0.982       -1.226       1.200
+            6+ child  |     -0.276      0.643    -0.43   0.671       -1.597       1.044
+                      |
+           event_time |
+                  -5  |     -1.179      0.890    -1.32   0.197       -3.009       0.651
+                  -4  |      0.508      0.983     0.52   0.610       -1.513       2.528
+                  -3  |      0.864      0.904     0.96   0.348       -0.994       2.722
+                  -2  |      0.696      0.724     0.96   0.345       -0.791       2.183
+                   0  |      2.254      1.173     1.92   0.066       -0.157       4.665
+                  +1  |      0.021      0.650     0.03   0.974       -1.314       1.357
+                  +2  |      0.747      1.126     0.66   0.513       -1.567       3.060
+                  +3  |      0.653      0.753     0.87   0.394       -0.895       2.200
+                  +4  |      0.189      0.646     0.29   0.772       -1.138       1.516
+                  +5  |      0.000  (omitted)
+                      |
+family_cat#event_time |
+          2 child#-5  |      0.639      0.519     1.23   0.229       -0.426       1.705
+          2 child#-4  |     -0.775      0.857    -0.90   0.374       -2.536       0.987
+          2 child#-3  |     -0.458      1.123    -0.41   0.687       -2.767       1.851
+          2 child#-2  |     -0.691      0.678    -1.02   0.317       -2.085       0.703
+           2 child#0  |     -1.953      1.232    -1.59   0.125       -4.485       0.580
+          2 child#+1  |     -0.291      0.987    -0.29   0.770       -2.321       1.739
+          2 child#+2  |     -0.880      1.039    -0.85   0.405       -3.016       1.256
+          2 child#+3  |     -1.104      1.135    -0.97   0.340       -3.438       1.229
+          2 child#+4  |      0.332      0.950     0.35   0.730       -1.620       2.284
+          2 child#+5  |      0.427      1.061     0.40   0.691       -1.754       2.607
+          3 child#-5  |      1.080      0.539     2.00   0.056       -0.028       2.187
+          3 child#-4  |     -0.886      0.907    -0.98   0.338       -2.750       0.978
+          3 child#-3  |     -0.659      0.792    -0.83   0.413       -2.286       0.968
+          3 child#-2  |     -0.680      0.605    -1.12   0.272       -1.924       0.565
+           3 child#0  |     -2.390      1.260    -1.90   0.069       -4.980       0.200
+          3 child#+1  |     -0.161      0.856    -0.19   0.852       -1.920       1.597
+          3 child#+2  |     -1.485      1.092    -1.36   0.186       -3.731       0.760
+          3 child#+3  |     -1.124      1.045    -1.08   0.292       -3.272       1.024
+          3 child#+4  |     -0.533      0.906    -0.59   0.562       -2.396       1.330
+          3 child#+5  |     -0.119      0.967    -0.12   0.903       -2.106       1.868
+          4 child#-5  |      0.907      0.493     1.84   0.077       -0.106       1.920
+          4 child#-4  |     -0.876      0.805    -1.09   0.286       -2.530       0.778
+          4 child#-3  |     -0.970      0.867    -1.12   0.273       -2.753       0.813
+          4 child#-2  |     -0.396      0.657    -0.60   0.552       -1.748       0.955
+           4 child#0  |     -2.214      1.195    -1.85   0.075       -4.670       0.242
+          4 child#+1  |     -0.184      0.821    -0.22   0.825       -1.871       1.503
+          4 child#+2  |     -1.506      1.118    -1.35   0.189       -3.803       0.791
+          4 child#+3  |     -1.267      0.946    -1.34   0.192       -3.212       0.678
+          4 child#+4  |     -0.510      0.825    -0.62   0.542       -2.205       1.186
+          4 child#+5  |     -0.389      0.983    -0.40   0.696       -2.410       1.632
+          5 child#-5  |      0.798      0.493     1.62   0.118       -0.215       1.811
+          5 child#-4  |     -0.770      0.799    -0.96   0.344       -2.412       0.872
+          5 child#-3  |     -0.933      0.866    -1.08   0.291       -2.713       0.846
+          5 child#-2  |     -0.521      0.761    -0.69   0.499       -2.085       1.042
+           5 child#0  |     -2.533      1.239    -2.04   0.051       -5.080       0.015
+          5 child#+1  |     -0.111      0.741    -0.15   0.882       -1.634       1.412
+          5 child#+2  |     -1.316      1.191    -1.10   0.279       -3.765       1.133
+          5 child#+3  |     -0.873      0.839    -1.04   0.308       -2.598       0.852
+          5 child#+4  |     -0.959      0.798    -1.20   0.240       -2.598       0.681
+          5 child#+5  |     -0.600      0.953    -0.63   0.535       -2.559       1.360
+         6+ child#-5  |      0.845      0.541     1.56   0.130       -0.267       1.957
+         6+ child#-4  |     -0.809      0.880    -0.92   0.366       -2.618       0.999
+         6+ child#-3  |     -1.043      0.819    -1.27   0.214       -2.727       0.641
+         6+ child#-2  |     -0.640      0.697    -0.92   0.367       -2.072       0.793
+          6+ child#0  |     -2.533      1.280    -1.98   0.058       -5.163       0.097
+         6+ child#+1  |     -0.305      0.754    -0.40   0.689       -1.855       1.245
+         6+ child#+2  |     -1.113      1.038    -1.07   0.294       -3.247       1.021
+         6+ child#+3  |     -0.976      0.978    -1.00   0.328       -2.986       1.035
+         6+ child#+4  |     -0.543      0.852    -0.64   0.530       -2.294       1.209
+         6+ child#+5  |     -0.643      0.983    -0.65   0.519       -2.664       1.378
+                      |
+                _cons |      8.288      0.458    18.10   0.000        7.347       9.230
+---------------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+  prov_birth |        27          27           0    *|
+        year |        13           1          12     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store event_edu
+
+. 
+. * Event Study Table for Junior High Articulation
+. esttab event_edu event_junior_artic event_senior_artic using "$RESULT/tables/event_decollective.tex", replace
+>  ///
+>     b(3) se(3) nobaselevels noomitted ///
+>     star(* 0.10 ** 0.05 *** 0.01) ///
+>     label booktabs ///
+>     title("Event Study: Impact of Decollectivization on Junior High Articulation by Family Size") ///
+>         mgroups("Years of Education" "Junior High Completion" "Senior High Completion", ///
+>                         pattern(1 1 1) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@
+> span})) ///
+>     keep(*.family_cat#*.event_time) ///
+>     stats(N r2, fmt(0 3) labels("Observations" "R-squared")) ///
+>     addnotes("Notes: Table shows coefficients from family size × event time interactions." ///
+>              "The omitted category is t=-1 (1 year before policy implementation)." ///
+>              "Standard errors clustered at province level in parentheses." ///
+>              "*** p<0.01, ** p<0.05, * p<0.10.") ///
+>     prehead("\begin{table}[htbp]\centering\small\caption{@title}") ///
+>     postfoot("\end{table}")
+(output written to /Users/tianyu/Downloads/thesis_pku/3_results/tables/event_decollective.tex)
+
+. 
+. *-------------------------------------------------------------------------------
+. 
+end of do-file
+
+. do "$DO/06_family_planning_policy.do"
+
+. **************************************************
+. * 06_family_planning_policy.do
+. ** Author: Tianyu Zheng
+. ** Date: April 10, 2025
+. ** Version: Stata/MP 18.0
+. **************************************************
+. 
+. /* Family Planning Policy */
+. use "$CLEAN/data_processed.dta", clear
+
+. 
+. /* Educational Attainment and Rank among Siblings */
+. 
+. estimates clear
+
+. 
+. gen junior_high_complete = (edu >= 9) if !missing(edu)
+(862 missing values generated)
+
+. gen high_school_complete = (edu >= 12) if !missing(edu)
+(862 missing values generated)
+
+. 
+. keep if sib == 2
+(30,059 observations deleted)
+
+. gen first_born = (rank == 1) if !missing(rank)
+
+. gen post1 = (year > 1973)
+
+. gen post2 = (year > 1979)
+
+. 
+. reghdfe edu female first_born 1.first_born#1.female 1.first_born#1.post1 1.first_born#1.post2, absorb(prov_bi
+> rth year) vce(cluster prov_birth)
+(dropped 1 singleton observations)
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =      9,050
+Absorbing 2 HDFE groups                           F(   5,     27) =       1.59
+Statistics robust to heteroskedasticity           Prob > F        =     0.1965
+                                                  R-squared       =     0.1239
+                                                  Adj R-squared   =     0.1174
+                                                  Within R-sq.    =     0.0008
+Number of clusters (prov_birth) =         28      Root MSE        =     3.2258
+
+                                 (Std. err. adjusted for 28 clusters in prov_birth)
+-----------------------------------------------------------------------------------
+                  |               Robust
+              edu | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+           female |     -0.015      0.115    -0.13   0.896       -0.251       0.221
+       first_born |      0.259      0.133     1.95   0.062       -0.014       0.533
+                  |
+first_born#female |
+             1 1  |      0.010      0.128     0.08   0.939       -0.254       0.273
+                  |
+ first_born#post1 |
+             1 1  |     -0.474      0.222    -2.13   0.042       -0.930      -0.018
+                  |
+ first_born#post2 |
+             1 1  |      0.328      0.231     1.42   0.167       -0.146       0.802
+                  |
+            _cons |     10.555      0.047   226.08   0.000       10.459      10.651
+-----------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+  prov_birth |        28          28           0    *|
+        year |        35           1          34     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store first_born_edu
+
+. 
+. reghdfe junior_high_complete female first_born 1.first_born#1.female 1.first_born#1.post1 1.first_born#1.post
+> 2, absorb(prov_birth year) vce(cluster prov_birth)
+(dropped 1 singleton observations)
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =      9,050
+Absorbing 2 HDFE groups                           F(   5,     27) =       2.84
+Statistics robust to heteroskedasticity           Prob > F        =     0.0346
+                                                  R-squared       =     0.1207
+                                                  Adj R-squared   =     0.1142
+                                                  Within R-sq.    =     0.0008
+Number of clusters (prov_birth) =         28      Root MSE        =     0.4104
+
+                                 (Std. err. adjusted for 28 clusters in prov_birth)
+-----------------------------------------------------------------------------------
+                  |               Robust
+junior_high_com~e | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+           female |     -0.011      0.015    -0.75   0.461       -0.042       0.020
+       first_born |      0.033      0.017     1.91   0.067       -0.002       0.069
+                  |
+first_born#female |
+             1 1  |      0.010      0.020     0.52   0.609       -0.030       0.050
+                  |
+ first_born#post1 |
+             1 1  |     -0.046      0.021    -2.13   0.042       -0.090      -0.002
+                  |
+ first_born#post2 |
+             1 1  |      0.026      0.022     1.15   0.260       -0.020       0.072
+                  |
+            _cons |      0.740      0.006   122.42   0.000        0.728       0.753
+-----------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+  prov_birth |        28          28           0    *|
+        year |        35           1          34     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store first_born_junior
+
+. 
+. reghdfe high_school_complete female first_born 1.first_born#1.female 1.first_born#1.post1 1.first_born#1.post
+> 2, absorb(prov_birth year) vce(cluster prov_birth)
+(dropped 1 singleton observations)
+(MWFE estimator converged in 5 iterations)
+
+HDFE Linear regression                            Number of obs   =      9,050
+Absorbing 2 HDFE groups                           F(   5,     27) =       2.43
+Statistics robust to heteroskedasticity           Prob > F        =     0.0605
+                                                  R-squared       =     0.0865
+                                                  Adj R-squared   =     0.0797
+                                                  Within R-sq.    =     0.0011
+Number of clusters (prov_birth) =         28      Root MSE        =     0.4715
+
+                                 (Std. err. adjusted for 28 clusters in prov_birth)
+-----------------------------------------------------------------------------------
+                  |               Robust
+high_school_com~e | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+------------------+----------------------------------------------------------------
+           female |      0.024      0.010     2.31   0.029        0.003       0.046
+       first_born |      0.028      0.020     1.36   0.184       -0.014       0.070
+                  |
+first_born#female |
+             1 1  |     -0.005      0.020    -0.24   0.809       -0.047       0.037
+                  |
+ first_born#post1 |
+             1 1  |     -0.056      0.033    -1.69   0.102       -0.125       0.012
+                  |
+ first_born#post2 |
+             1 1  |      0.047      0.041     1.15   0.262       -0.037       0.131
+                  |
+            _cons |      0.392      0.005    73.70   0.000        0.381       0.403
+-----------------------------------------------------------------------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+  prov_birth |        28          28           0    *|
+        year |        35           1          34     |
+-----------------------------------------------------+
+* = FE nested within cluster; treated as redundant for DoF computation
+
+. estimates store first_born_senior
+
+. 
+. // Export to LaTeX
+. esttab first_born_edu first_born_junior first_born_senior ///
+>     using "$RESULT/tables/first_born.tex", replace ///
+>     b(3) se(3) nobaselevels noomitted ///
+>     star(* 0.10 ** 0.05 *** 0.01) ///
+>     label booktabs nomtitle ///
+>     title("Impact of Birth Order on Educational Outcomes for 2-Children Families") ///
+>     mgroups("Years of Education" "Junior High Completion" "Senior High Completion", ///
+>             pattern(1 1 1) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
+>     keep(first_born 1.first_born#0.female 1.first_born#1.post1 1.first_born#1.post2 female) ///
+>     order(first_born 1.first_born#0.female 1.first_born#1.post1 1.first_born#1.post2 female) ///
+>     coeflabels(first_born "First-born" ///
+>                1.first_born#0.female "First-born × Female" ///
+>                1.first_born#1.post1 "First-born × Post-1973" ///
+>                1.first_born#1.post2 "First-born × Post-1979" ///
+>                female "Female") ///
+>     stats(N r2, fmt(0 3) labels("Observations" "R-squared")) ///
+>     addnotes("Notes: All specifications include province-of-birth and year fixed effects." ///
+>              "Standard errors clustered at province-of-birth level in parentheses." ///
+>              "*** p<0.01, ** p<0.05, * p<0.10.") ///
+>     prehead("\begin{table}[htbp]\centering\small\caption{@title}") ///
+>     postfoot("\end{table}")
+(output written to /Users/tianyu/Downloads/thesis_pku/3_results/tables/first_born.tex)
+
+. 
+end of do-file
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/tianyu/Downloads/thesis_pku/2_analysis/logs/master.log
+  log type:  text
+ closed on:   8 Feb 2026, 17:21:59
+---------------------------------------------------------------------------------------------------------------

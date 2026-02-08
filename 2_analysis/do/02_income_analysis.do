@@ -5,6 +5,8 @@
 ** Version: Stata/MP 18.0
 **************************************************
 
+/* Income Analysis */
+
 ** Table & Figure: Income, Family Size, Rank among Siblings, Educational Attainment
 
 use "$CLEAN/data_processed.dta", clear
